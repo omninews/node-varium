@@ -1,4 +1,6 @@
-const parse = require("./parse");
-const lex = require("./lex");
+import parse from './parse.js';
+import lex from './lex.js';
 
-module.exports = input => parse(lex(input));
+export default function interpret(input) {
+  return parse(lex(input));
+}

@@ -1,26 +1,22 @@
-const R = require("ramda");
+import * as R from 'ramda';
 
 let log;
-
 try {
   // eslint-disable-next-line
-  const debug = require("debug");
-  log = debug("varium:lexer");
+  const debug = (await import("debug")).default;
+  log = debug('varium:lexer');
 } catch (e) {
   log = () => {};
 }
 
-const wrapNonArrays = R.ifElse(
-  Array.isArray,
-  R.identity,
-  R.of);
+const wrapNonArrays = R.ifElse(Array.isArray, R.identity, R.of);
 
 const harmonizeSyntax = R.map(R.map(wrapNonArrays));
 
 const Input = (data) => {
   let i = 0;
   return {
-    peek: () => data[i] === undefined ? "EOF" : data[i],
+    peek: () => (data[i] === undefined ? 'EOF' : data[i]),
     skip: () => {
       i += 1;
     },
@@ -42,7 +38,7 @@ const matchCondition = (patterns, char) => (condition) => {
     throw new Error(`Invalid condition ${condition}`);
   }
 
-  const safeRegexStr = parts[1][0] === "^" ? parts[1] : `^(${parts[1]})$`;
+  const safeRegexStr = parts[1][0] === '^' ? parts[1] : `^(${parts[1]})$`;
   const regex = new RegExp(safeRegexStr, parts[2]);
 
   return String(char).match(regex);
@@ -65,7 +61,7 @@ const FailSafe = (lim) => {
   };
 };
 
-module.exports = (rawSyntax, initialState, chars) => {
+export default function syntaxParser(rawSyntax, initialState, chars) {
   const tokens = [];
   const syntax = harmonizeSyntax(rawSyntax);
   const input = Input(chars);
@@ -73,7 +69,7 @@ module.exports = (rawSyntax, initialState, chars) => {
 
   let done = false;
   let currentStateName = initialState;
-  let store = "";
+  let store = '';
 
   const functions = {
     take() {
@@ -85,7 +81,7 @@ module.exports = (rawSyntax, initialState, chars) => {
         type: currentStateName,
         value: store,
       });
-      store = "";
+      store = '';
     },
     trim() {
       store = store.trim();
@@ -99,10 +95,10 @@ module.exports = (rawSyntax, initialState, chars) => {
   };
 
   const patterns = {
-    EOF: "/EOF/",
-    WS: "/ |\\t|\\n/",
-    EOL: "/\\n/",
-    _: "/(.|\\r\\n|\\r|\\n)*/",
+    EOF: '/EOF/',
+    WS: '/ |\\t|\\n/',
+    EOL: '/\\n/',
+    _: '/(.|\\r\\n|\\r|\\n)*/',
   };
 
   const doAction = (action) => {
@@ -119,7 +115,10 @@ module.exports = (rawSyntax, initialState, chars) => {
     const currentChar = input.peek();
     const currentState = syntax[currentStateName];
 
-    const condition = R.find(matchCondition(patterns, currentChar), Object.keys(currentState));
+    const condition = R.find(
+      matchCondition(patterns, currentChar),
+      Object.keys(currentState),
+    );
     const actions = currentState[condition];
 
     log(currentStateName, currentChar, actions);
@@ -131,7 +130,9 @@ module.exports = (rawSyntax, initialState, chars) => {
     }
 
     if (!failSafe(input.pos())) {
-      throw new Error(`Endless cycle detected in state ${currentStateName} for condition ${condition}: ${actions}`);
+      throw new Error(
+        `Endless cycle detected in state ${currentStateName} for condition ${condition}: ${actions}`,
+      );
     }
 
     if (input.eof()) {
@@ -140,4 +141,4 @@ module.exports = (rawSyntax, initialState, chars) => {
   }
 
   return tokens;
-};
+}
