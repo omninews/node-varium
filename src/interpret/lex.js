@@ -1,11 +1,13 @@
-const fs = require("fs");
-const path = require("path");
-const yaml = require("js-yaml");
-const parser = require("./syntax-parser");
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import parser from './syntax-parser.js';
 
-const syntaxPath = path.join(__dirname, "./syntax.yml");
-const syntaxYml = fs.readFileSync(syntaxPath, { encoding: "utf8" });
-
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const syntaxPath = path.join(__dirname, './syntax.yml');
+const syntaxYml = fs.readFileSync(syntaxPath, { encoding: 'utf8' });
 const syntax = yaml.safeLoad(syntaxYml);
 
-module.exports = chars => parser(syntax, "Noop", chars);
+export default function lex(chars) {
+  return parser(syntax, 'Noop', chars);
+}

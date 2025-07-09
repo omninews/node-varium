@@ -1,12 +1,12 @@
-const Validators = require("./validators");
-const validatorError = require("../util/suggest");
+import Validators from "./validators.js";
+import { suggestNameError } from "../util/suggest.js";
 
 let logName;
 let logValue;
 
 try {
   // eslint-disable-next-line
-  const debug = require("debug");
+  const debug = (await import("debug")).default;
   logName = debug("varium:validate:name");
   logValue = debug("varium:validate:value");
 } catch (e) {
@@ -14,8 +14,8 @@ try {
   logValue = () => {};
 }
 
-module.exports = (customValidators, manifest, env) => {
-  const validators = Object.assign({}, Validators, customValidators);
+export default function validate(customValidators, manifest, env) {
+  const validators = { ...Validators, ...customValidators };
 
   return manifest.map((definition) => {
     const validator = validators[definition.type];
@@ -23,7 +23,10 @@ module.exports = (customValidators, manifest, env) => {
     const envDefault = definition.default;
 
     if (!validator) {
-      const errorMessage = validatorError(Object.keys(validators), definition.type);
+      const errorMessage = suggestNameError(
+        Object.keys(validators),
+        definition.type
+      );
 
       return {
         error$: `The type ${definition.type} for env var "${definition.name}" does not exist.\n${errorMessage}`,
@@ -50,9 +53,8 @@ module.exports = (customValidators, manifest, env) => {
       }
     }
 
-    const value = envValue === undefined || envValue === ""
-      ? envDefault
-      : envValue;
+    const value =
+      envValue === undefined || envValue === "" ? envDefault : envValue;
 
     try {
       return {
@@ -64,6 +66,4 @@ module.exports = (customValidators, manifest, env) => {
       };
     }
   });
-};
-
-module.exports.validators = Validators;
+}

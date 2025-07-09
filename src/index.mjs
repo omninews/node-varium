@@ -1,12 +1,12 @@
-const fs = require("fs");
-const path = require("path");
-const interpret = require("./interpret");
-const validate = require("./validate");
-const nameError = require("./util/suggest");
+import fs from "fs";
+import path from "path";
+import interpret from "./interpret/index.js";
+import validate from "./validate/index.js";
+import nameError from "./util/suggest.js";
 
 const reader = (config, env, manifestString) => {
   const result = validate(config.types, interpret(manifestString), env);
-  const errors = result.map(x => x.error$).filter(Boolean);
+  const errors = result.map((x) => x.error$).filter(Boolean);
 
   if (errors.length) {
     const msg = "Varium: Error reading env:";
@@ -30,21 +30,25 @@ const reader = (config, env, manifestString) => {
       if (!Object.prototype.hasOwnProperty.call(target, prop)) {
         if (prop === "get") {
           return (name) => {
-            throw new Error(`Varium upgrade notice: config.get("${name}") is obsolete. Access the property directly using config.${name}`);
+            throw new Error(
+              `Varium upgrade notice: config.get("${name}") is obsolete. Access the property directly using config.${name}`
+            );
           };
         } else {
           const suggestion = nameError(Object.keys(values), prop);
-          throw new Error(`Varium: Undeclared env var '${prop}'.\n${suggestion}`);
+          throw new Error(
+            `Varium: Undeclared env var '${prop}'.\n${suggestion}`
+          );
         }
       } else {
         return target[prop];
       }
-    }
+    },
   });
 };
 
 const loader = (manifestPath) => {
-  const appDir = path.dirname(require.main.filename);
+  const appDir = path.dirname(import.meta.url.replace("file://", ""));
   const absPath = path.resolve(appDir, manifestPath);
 
   try {
@@ -54,11 +58,13 @@ const loader = (manifestPath) => {
   }
 };
 
-module.exports = ({
+export default function varium({
   types = {},
   env = process.env,
   manifestPath = "env.manifest",
   noProcessExit = false,
-} = {}) => reader({ types, noProcessExit }, env, loader(manifestPath));
+} = {}) {
+  return reader({ types, noProcessExit }, env, loader(manifestPath));
+}
 
-module.exports.reader = reader;
+export { reader };
